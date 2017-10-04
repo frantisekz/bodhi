@@ -49,13 +49,14 @@ def push(username, password, cert_prefix, **kwargs):
     # Don't try and push locked updates
     kwargs['locked'] = False
 
+    if staging:
+        locks = '/var/cache/bodhi/mashing/MASHING-*'
+    else:
+        locks = '/mnt/koji/mash/updates/MASHING-*'
+
     # If we're resuming a push
     if resume:
         updates = []
-        if staging:
-            locks = '/var/cache/bodhi/mashing/MASHING-*'
-        else:
-            locks = '/mnt/koji/mash/updates/MASHING-*'
         for lockfile in glob.glob(locks):
             doit = raw_input('Resume %s? (y/n)' % lockfile).strip().lower()
             if doit == 'n':
@@ -69,6 +70,10 @@ def push(username, password, cert_prefix, **kwargs):
                 updates.append(update)
                 click.echo(update)
     else:
+        if glob.glob(locks):
+            click.echo('\nExisting pushes in progress. Please wait or resume.')
+            return
+
         # release->request->updates
         releases = defaultdict(lambda: defaultdict(list))
         updates = []
